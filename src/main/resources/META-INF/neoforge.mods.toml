@@ -1,0 +1,34 @@
+[mods]
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "${mod_name}"
+logoFile = "lazy_chunks.png"
+credits = "Original author: rizen. Ported to NeoForge."
+authors = "rizen"
+description = '''
+Reduces stutters by spreading chunk loading across multiple frames.
+A client-side mod that dynamically throttles chunk processing based on your current FPS.
+'''
+license = "${mod_license}"
+
+[[dependencies.${mod_id}]]
+    modId = "minecraft"
+    type = "required"
+    versionRange = "[1.21.1,1.21.1]"
+    ordering = "NONE"
+    side = "CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId = "neoforge"
+    type = "required"
+    versionRange = "[21,)"
+    ordering = "NONE"
+    side = "CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId = "java"
+    type = "required"
+    versionRange = "[21,)"
+    ordering = "NONE"
+    side = "CLIENT"

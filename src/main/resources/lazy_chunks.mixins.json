@@ -1,0 +1,15 @@
+{
+    "required": true,
+    "package": "net.rizen.lazy_chunks.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "refmap": "lazy_chunks.refmap.json",
+    "client": [
+        "accessor.IBlockableEventLoopAccessor",
+        "PacketUtilsMixin",
+        "BlockableEventLoopMixin",
+        "DebugScreenOverlayMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}
