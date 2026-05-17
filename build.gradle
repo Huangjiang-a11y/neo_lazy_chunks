@@ -45,13 +45,8 @@ dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
     implementation 'com.google.code.gson:gson:2.10.1'
     annotationProcessor 'org.spongepowered:mixin:0.8.7'
-}
-
-// 确保 Gson 在编译时对注解处理器可见
-tasks.withType(JavaCompile).configureEach {
-    options.annotationProcessorPath = configurations.annotationProcessor
-    // 将实现依赖也加入编译类路径（以防万一）
-    classpath += configurations.implementation
+    // 确保 Gson 在注解处理器类路径上可用
+    annotationProcessor 'com.google.code.gson:gson:2.10.1'
 }
 
 processResources {
