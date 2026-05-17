@@ -12,36 +12,29 @@ import java.util.Queue;
 
 public class LazyChunkLoading {
 
-    // ========== 权重常量 ==========
     private static final double MIN_WEIGHT_THRESHOLD = 5.0;
     private static final double WEIGHT_CHUNK_WITH_LIGHT = 1.0;
     private static final double WEIGHT_LIGHT_UPDATE = 0.2;
     private static final double WEIGHT_FORGET_CHUNK = 2.6;
 
-    // ========== 帧计数器（防溢出） ==========
     private static int frameCounter = 0;
     private static final int FRAME_COUNTER_MAX = 10000;
 
-    // ========== FPS ==========
     private static double smoothedFps = 60.0;
-    private static final double FPS_SMOOTHING_FACTOR = 0.05;
+    private static final double FPS_SMOOTHING_FACTOR = 0.1;
 
-    // ========== 帧时间 EMA ==========
     private static double emaFrameTime = 16.67;
     private static double emaFrameVariance = 0.0;
     private static final double EMA_ALPHA = 0.1;
 
-    // ========== 队列指标 ==========
     private static int previousQueueDepth = 0;
     private static double queueGrowthRate = 0.0;
 
-    // ========== 缓存系统 ==========
     private static double cachedMaxWeight = 0;
     private static boolean cacheValid = false;
     private static double cachedFps = 60.0;
     private static int cachedQueueDepth = 0;
 
-    // ========== 调试信息 ==========
     private static double lastProcessingTimeMs = 0.0;
     private static int lastPendingTasks = 0;
     private static double lastWeight = 0;
@@ -50,7 +43,6 @@ public class LazyChunkLoading {
     private static int lastProcessed = 0;
     private static boolean lastThrottled = false;
 
-    // ========== Getter ==========
     public static int getLastPendingTasks() { return lastPendingTasks; }
     public static double getLastWeight() { return lastWeight; }
     public static int getLastFps() { return lastFps; }
@@ -62,14 +54,12 @@ public class LazyChunkLoading {
     public static double getQueueGrowthRate() { return queueGrowthRate; }
     public static double getLastProcessingTimeMs() { return lastProcessingTimeMs; }
 
-    // ========== FPS 采样 ==========
     private static void sampleFps() {
         int instantFps = Math.max(Minecraft.getInstance().getFps(), 1);
         smoothedFps = smoothedFps * (1.0 - FPS_SMOOTHING_FACTOR)
                     + instantFps * FPS_SMOOTHING_FACTOR;
     }
 
-    // ========== EMA 帧时间 ==========
     public static void recordFrameTime(double frameTimeMs) {
         if (emaFrameTime <= 0) {
             emaFrameTime = frameTimeMs;
@@ -86,13 +76,11 @@ public class LazyChunkLoading {
         lastProcessingTimeMs = timeMs;
     }
 
-    // ========== 队列指标 ==========
     private static void updateQueueMetrics(int currentDepth) {
         queueGrowthRate = queueGrowthRate * 0.8 + (currentDepth - previousQueueDepth) * 0.2;
         previousQueueDepth = currentDepth;
     }
 
-    // ========== 稳定性系数 ==========
     private static double getStabilityMultiplier() {
         if (emaFrameTime <= 0) return 1.0;
         double stdDev = Math.sqrt(Math.max(0, emaFrameVariance));
@@ -107,11 +95,9 @@ public class LazyChunkLoading {
         return 1.0;
     }
 
-    // ========== 预算计算 ==========
     private static double calculateMaxWeight() {
         LazyChunksConfig config = LazyChunksConfig.getInstance();
         double maxWeight = config.baseWeightPerFrame * smoothedFps / config.targetFps;
-
         if (config.proactiveThrottling) {
             maxWeight *= getStabilityMultiplier();
             maxWeight *= getQueueGrowthMultiplier();
@@ -129,12 +115,9 @@ public class LazyChunkLoading {
         return (long) (maxTimeMs * 1_000_000);
     }
 
-    /** 判断缓存是否仍然有效 */
     private static boolean isCacheValid(int currentQueueDepth) {
         if (!cacheValid) return false;
-        // FPS 变化超过 5，重新计算
         if (Math.abs(smoothedFps - cachedFps) > 5.0) return false;
-        // 队列深度变化超过 50%，重新计算
         if (cachedQueueDepth > 0) {
             double ratio = (double) currentQueueDepth / cachedQueueDepth;
             if (ratio > 1.5 || ratio < 0.5) return false;
@@ -142,26 +125,24 @@ public class LazyChunkLoading {
         return true;
     }
 
-    /** 执行一次完整的采样计算 */
     private static void doFullSample(int taskCount) {
         sampleFps();
         updateQueueMetrics(taskCount);
-
         LazyChunksConfig config = LazyChunksConfig.getInstance();
         if (smoothedFps >= config.fpsThreshold) {
             cachedMaxWeight = Double.MAX_VALUE;
         } else {
             cachedMaxWeight = calculateMaxWeight();
         }
-
         cacheValid = true;
         cachedFps = smoothedFps;
         cachedQueueDepth = taskCount;
     }
 
-    // ========== 核心方法 ==========
-    @SuppressWarnings("unchecked")
-    public static int getTaskCount(Queue pendingTasks) {
+    /**
+     * 修复：Queue<Runnable> 而不是原生 Queue
+     */
+    public static int getTaskCount(Queue<Runnable> pendingTasks) {
         LazyChunksConfig config = LazyChunksConfig.getInstance();
 
         if (!config.lazyChunkLoadingEnabled) {
@@ -177,11 +158,10 @@ public class LazyChunkLoading {
             return 0;
         }
 
-        // 帧计数器递增 + 防溢出
         frameCounter++;
         if (frameCounter >= FRAME_COUNTER_MAX) frameCounter = 0;
 
-        Runnable[] tasks = (Runnable[]) pendingTasks.toArray(new Runnable[0]);
+        Runnable[] tasks = pendingTasks.toArray(new Runnable[0]);
         int taskCount = tasks.length;
         lastPendingTasks = taskCount;
         lastFps = Minecraft.getInstance().getFps();
@@ -189,7 +169,6 @@ public class LazyChunkLoading {
         double totalWeight = getTotalChunkWeight(tasks);
         lastWeight = totalWeight;
 
-        // 任务太少，不节流
         if (totalWeight < MIN_WEIGHT_THRESHOLD) {
             lastThrottled = false;
             lastBudget = totalWeight;
@@ -202,9 +181,7 @@ public class LazyChunkLoading {
         boolean shouldSample = (frameCounter % sampleInterval == 0);
 
         if (shouldSample) {
-            // ===== 采样帧：做完整计算 =====
             doFullSample(taskCount);
-
             if (cachedMaxWeight == Double.MAX_VALUE) {
                 lastThrottled = false;
                 lastBudget = totalWeight;
@@ -212,14 +189,12 @@ public class LazyChunkLoading {
                 return Integer.MAX_VALUE;
             }
         } else {
-            // ===== 非采样帧：判断缓存是否可用 =====
             if (!isCacheValid(taskCount)) {
                 doFullSample(taskCount);
             }
             if (!cacheValid) {
                 doFullSample(taskCount);
             }
-
             if (cachedMaxWeight == Double.MAX_VALUE) {
                 lastThrottled = false;
                 lastBudget = totalWeight;

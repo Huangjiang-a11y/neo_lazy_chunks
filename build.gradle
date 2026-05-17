@@ -33,23 +33,16 @@ runs {
 
     server {
         systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-        argument '--nogui'
+        programArgument '--nogui'
     }
-}
-
-repositories {
-    mavenCentral()
 }
 
 dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
-    implementation 'com.google.code.gson:gson:2.10.1'
-    annotationProcessor 'org.spongepowered:mixin:0.8.7'
-    // 确保 Gson 在注解处理器类路径上可用
-    annotationProcessor 'com.google.code.gson:gson:2.10.1'
 }
 
-processResources {
+// ========== 资源文件变量替换 ==========
+tasks.withType(ProcessResources).configureEach {
     var replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
@@ -67,10 +60,10 @@ processResources {
     }
 }
 
+// ========== JAR Manifest (不需要 MixinConfigs，由 mods.toml 的 [[mixins]] 块处理) ==========
 jar {
     manifest {
         attributes([
-                "MixinConfigs": "${mod_id}.mixins.json",
                 "Specification-Title": mod_id,
                 "Specification-Vendor": "rizen",
                 "Specification-Version": "1",

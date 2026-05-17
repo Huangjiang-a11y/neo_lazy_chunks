@@ -31,7 +31,6 @@ public abstract class BlockableEventLoopMixin {
             return;
         }
 
-        // 帧计数器 + 防溢出
         lazychunks$localFrameCount++;
         if (lazychunks$localFrameCount >= lazychunks$FRAME_COUNTER_MAX) {
             lazychunks$localFrameCount = 0;
@@ -39,20 +38,17 @@ public abstract class BlockableEventLoopMixin {
 
         long currentTime = System.nanoTime();
 
-        // 记录帧时间（每帧都记录，EMA O(1) 开销极低）
         if (lazychunks$lastFrameStartTime > 0) {
             double frameTimeMs = (currentTime - lazychunks$lastFrameStartTime) / 1_000_000.0;
             LazyChunkLoading.recordFrameTime(frameTimeMs);
         }
         lazychunks$lastFrameStartTime = currentTime;
 
-        // 传送检测 — 间隔从配置读取
         int teleportInterval = LazyChunksConfig.getInstance().teleportCheckInterval;
         if (lazychunks$localFrameCount % teleportInterval == 0) {
             TeleportDetector.tick();
         }
 
-        // 获取任务限制（内部已按 sampleInterval 降频）
         int taskLimit = LazyChunkLoading.getTaskCount(
                 ((IBlockableEventLoopAccessor) this).lazychunks$pendingRunnables()
         );
