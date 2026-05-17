@@ -1,34 +1,51 @@
-[mods]
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+
 [[mods]]
-modId = "${mod_id}"
-version = "${mod_version}"
-displayName = "${mod_name}"
-logoFile = "lazy_chunks.png"
-credits = "Original author: rizen. Ported to NeoForge."
-authors = "rizen"
-description = '''
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+logoFile="lazy_chunks.png"
+credits="Original author: rizen. Ported to NeoForge."
+authors="rizen"
+description='''
 Reduces stutters by spreading chunk loading across multiple frames.
 A client-side mod that dynamically throttles chunk processing based on your current FPS.
+
+Config options (in config/lazy_chunks.json):
+  lazyChunkLoadingEnabled - Enable/disable the mod
+  targetFps - Baseline FPS for budget calculation (default 60)
+  fpsThreshold - FPS above which throttling is disabled (default 80)
+  baseWeightPerFrame - Base chunk work per frame (default 3.0)
+  maxFrameTimePercent - Max % of frame time for chunks (default 12.0)
+  proactiveThrottling - Reduce budget on unstable frame times (default true)
+  teleportProtection - Extra throttling after teleports (default true)
+  minimumBudget - Minimum weight budget (default 3.0)
+  sampleInterval - Budget calculation interval in frames (default 5)
+  teleportCheckInterval - Teleport detection interval in frames (default 3)
 '''
-license = "${mod_license}"
+
+[[mixins]]
+config="${mod_id}.mixins.json"
 
 [[dependencies.${mod_id}]]
-    modId = "minecraft"
-    type = "required"
-    versionRange = "[1.21.1,1.21.1]"
-    ordering = "NONE"
-    side = "CLIENT"
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="BOTH"
 
 [[dependencies.${mod_id}]]
-    modId = "neoforge"
-    type = "required"
-    versionRange = "[21,)"
-    ordering = "NONE"
-    side = "CLIENT"
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
 
 [[dependencies.${mod_id}]]
-    modId = "java"
-    type = "required"
-    versionRange = "[21,)"
-    ordering = "NONE"
-    side = "CLIENT"
+    modId="java"
+    type="required"
+    versionRange="[21,)"
+    ordering="NONE"
+    side="BOTH"
