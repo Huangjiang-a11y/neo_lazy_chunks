@@ -50,21 +50,21 @@ public class LazyChunksConfig {
                 config.fpsThreshold =
                         cfg.getIntOrElse("fpsThreshold", 80);
                 config.baseWeightPerFrame =
-                        cfg.getDoubleOrElse("baseWeightPerFrame", 3.0);
+                        cfg.<Double>getOrElse("baseWeightPerFrame", 3.0);
                 config.maxFrameTimePercent =
-                        cfg.getDoubleOrElse("maxFrameTimePercent", 12.0);
+                        cfg.<Double>getOrElse("maxFrameTimePercent", 12.0);
                 config.proactiveThrottling =
                         cfg.getOrElse("proactiveThrottling", true);
                 config.teleportProtection =
                         cfg.getOrElse("teleportProtection", true);
                 config.weightChunkWithLight =
-                        cfg.getDoubleOrElse("weightChunkWithLight", 1.0);
+                        cfg.<Double>getOrElse("weightChunkWithLight", 1.0);
                 config.weightLightUpdate =
-                        cfg.getDoubleOrElse("weightLightUpdate", 0.2);
+                        cfg.<Double>getOrElse("weightLightUpdate", 0.2);
                 config.weightForgetChunk =
-                        cfg.getDoubleOrElse("weightForgetChunk", 2.6);
+                        cfg.<Double>getOrElse("weightForgetChunk", 2.6);
                 config.minimumBudget =
-                        cfg.getDoubleOrElse("minimumBudget", 3.0);
+                        cfg.<Double>getOrElse("minimumBudget", 3.0);
                 config.sampleInterval =
                         cfg.getIntOrElse("sampleInterval", 5);
                 config.teleportCheckInterval =
