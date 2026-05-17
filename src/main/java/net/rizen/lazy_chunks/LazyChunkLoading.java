@@ -12,10 +12,12 @@ import java.util.Queue;
 
 public class LazyChunkLoading {
 
+    // 注意：以下三个常量已删除
+    // private static final double WEIGHT_CHUNK_WITH_LIGHT = 1.0;   ← 删掉
+    // private static final double WEIGHT_LIGHT_UPDATE = 0.2;        ← 删掉
+    // private static final double WEIGHT_FORGET_CHUNK = 2.6;        ← 删掉
+
     private static final double MIN_WEIGHT_THRESHOLD = 5.0;
-    private static final double WEIGHT_CHUNK_WITH_LIGHT = 1.0;
-    private static final double WEIGHT_LIGHT_UPDATE = 0.2;
-    private static final double WEIGHT_FORGET_CHUNK = 2.6;
 
     private static int frameCounter = 0;
     private static final int FRAME_COUNTER_MAX = 10000;
@@ -77,7 +79,8 @@ public class LazyChunkLoading {
     }
 
     private static void updateQueueMetrics(int currentDepth) {
-        queueGrowthRate = queueGrowthRate * 0.8 + (currentDepth - previousQueueDepth) * 0.2;
+        queueGrowthRate = queueGrowthRate * 0.8
+                        + (currentDepth - previousQueueDepth) * 0.2;
         previousQueueDepth = currentDepth;
     }
 
@@ -97,7 +100,8 @@ public class LazyChunkLoading {
 
     private static double calculateMaxWeight() {
         LazyChunksConfig config = LazyChunksConfig.getInstance();
-        double maxWeight = config.baseWeightPerFrame * smoothedFps / config.targetFps;
+        double maxWeight = config.baseWeightPerFrame
+                         * smoothedFps / config.targetFps;
         if (config.proactiveThrottling) {
             maxWeight *= getStabilityMultiplier();
             maxWeight *= getQueueGrowthMultiplier();
@@ -111,7 +115,8 @@ public class LazyChunkLoading {
     public static long getMaxProcessingTimeNanos() {
         LazyChunksConfig config = LazyChunksConfig.getInstance();
         double targetFrameTimeMs = 1000.0 / Math.max(config.targetFps, 1);
-        double maxTimeMs = targetFrameTimeMs * (config.maxFrameTimePercent / 100.0);
+        double maxTimeMs = targetFrameTimeMs
+                         * (config.maxFrameTimePercent / 100.0);
         return (long) (maxTimeMs * 1_000_000);
     }
 
@@ -139,9 +144,6 @@ public class LazyChunkLoading {
         cachedQueueDepth = taskCount;
     }
 
-    /**
-     * 修复：Queue<Runnable> 而不是原生 Queue
-     */
     public static int getTaskCount(Queue<Runnable> pendingTasks) {
         LazyChunksConfig config = LazyChunksConfig.getInstance();
 
@@ -230,17 +232,19 @@ public class LazyChunkLoading {
         return weight;
     }
 
+    // ========== 唯一改动：从配置读取权重，不再硬编码 ==========
     private static double getChunkUpdateWeight(Runnable task) {
         if (task instanceof PacketRunnable packetRunnable) {
+            LazyChunksConfig config = LazyChunksConfig.getInstance();
             Packet<?> packet = packetRunnable.getPacket();
             if (packet instanceof ClientboundLevelChunkWithLightPacket) {
-                return WEIGHT_CHUNK_WITH_LIGHT;
+                return config.weightChunkWithLight;
             }
             if (packet instanceof ClientboundLightUpdatePacket) {
-                return WEIGHT_LIGHT_UPDATE;
+                return config.weightLightUpdate;
             }
             if (packet instanceof ClientboundForgetLevelChunkPacket) {
-                return WEIGHT_FORGET_CHUNK;
+                return config.weightForgetChunk;
             }
         }
         return 0.0;
