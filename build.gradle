@@ -32,18 +32,15 @@ runs {
     }
 
     server {
-        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-        programArgument '--nogui'
+    systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+    argument '--nogui'          // 注意：去掉了 "program"
     }
 }
 
 dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
-}
-
-// ========== Mixin 注解处理器配置 ==========
-mixin {
-    add sourceSets.main, "${mod_id}.refmap.json"
+    // Mixin 依赖（注解处理器需要）
+    annotationProcessor 'org.spongepowered:mixin:0.8.7'
 }
 
 // ========== 资源文件变量替换 ==========
