@@ -41,6 +41,7 @@ dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
     implementation 'com.google.code.gson:gson:2.10.1'
     annotationProcessor 'org.spongepowered:mixin:0.8.7'
+    annotationProcessor 'com.google.code.gson:gson:2.10.1'
 }
 
 // ========== 资源文件变量替换 ==========
