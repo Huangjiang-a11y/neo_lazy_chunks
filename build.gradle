@@ -39,7 +39,7 @@ runs {
 
 dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
-    // Mixin 依赖（注解处理器需要）
+    implementation 'com.google.code.gson:gson:2.10.1'
     annotationProcessor 'org.spongepowered:mixin:0.8.7'
 }
 
