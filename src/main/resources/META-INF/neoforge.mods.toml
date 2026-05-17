@@ -6,16 +6,16 @@ license="${mod_license}"
 modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
-logoFile="lazy_chunks.png"
-credits="Original author: rizen. Ported to NeoForge."
-authors="rizen"
+logoFile="neo_lazy_chunks.png"
+credits="Original mod by rizen. Ported to NeoForge by Huangjiang-a11y."
+authors="Huangjiang-a11y"
 description='''
 Reduces stutters by spreading chunk loading across multiple frames.
 A client-side mod that dynamically throttles chunk processing based on your current FPS.
 '''
 
 [[mixins]]
-config="${mod_id}.mixins.json"
+config="neo_lazy_chunks.mixins.json"
 
 [[dependencies.${mod_id}]]
     modId="neoforge"

@@ -10,7 +10,7 @@ import java.nio.file.Path;
 public class LazyChunksConfig {
     private static LazyChunksConfig INSTANCE;
     private static final Path CONFIG_PATH =
-            FMLPaths.CONFIGDIR.get().resolve("lazy_chunks.toml");
+            FMLPaths.CONFIGDIR.get().resolve("neo_lazy_chunks.toml");
 
     public boolean lazyChunkLoadingEnabled = true;
     public int targetFps = 60;
@@ -105,7 +105,7 @@ public class LazyChunksConfig {
 
             cfg.setComment("",
                     "\n LazyChunks — Client-side chunk-loading throttle" +
-                    "\n Config file: .minecraft/config/lazy_chunks.toml" +
+                    "\n Config file: .minecraft/config/neo_lazy_chunks.toml" +
                     "\n Changes take effect on the next game launch.\n");
 
             cfg.setComment("lazyChunkLoadingEnabled",

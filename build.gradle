@@ -41,7 +41,6 @@ dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
 }
 
-// ========== 资源文件变量替换 ==========
 tasks.withType(ProcessResources).configureEach {
     var replaceProperties = [
             minecraft_version      : minecraft_version,
@@ -60,16 +59,15 @@ tasks.withType(ProcessResources).configureEach {
     }
 }
 
-// ========== JAR Manifest (不需要 MixinConfigs，由 mods.toml 的 [[mixins]] 块处理) ==========
 jar {
     manifest {
         attributes([
                 "Specification-Title": mod_id,
-                "Specification-Vendor": "rizen",
+                "Specification-Vendor": "Huangjiang-a11y",
                 "Specification-Version": "1",
                 "Implementation-Title": project.name,
                 "Implementation-Version": mod_version,
-                "Implementation-Vendor": "rizen"
+                "Implementation-Vendor": "Huangjiang-a11y"
         ])
     }
 }
