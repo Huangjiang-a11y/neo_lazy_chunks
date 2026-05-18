@@ -63,25 +63,30 @@ public class LazyChunkLoading {
     }
 
     private static void maybeUpdateTps() {
-        LazyChunksConfig config = LazyChunksConfig.getInstance();
-        int interval = Math.max(1, config.tpsCheckInterval);
+    LazyChunksConfig config = LazyChunksConfig.getInstance();
+    int interval = Math.max(1, config.tpsCheckInterval);
 
-        tpsFrameCounter++;
-        if (tpsFrameCounter >= FRAME_COUNTER_MAX) tpsFrameCounter = 0;
-        if (tpsFrameCounter % interval != 0) return;
+    tpsFrameCounter++;
+    if (tpsFrameCounter >= FRAME_COUNTER_MAX) tpsFrameCounter = 0;
+    if (tpsFrameCounter % interval != 0) return;
 
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.getSingleplayerServer() == null) {
-            lastTps = 20.0;
-            return;
-        }
-        try {
-            double[] tps = mc.getSingleplayerServer().getTPS();
-            lastTps = tps[0];
-        } catch (Exception e) {
-            lastTps = 20.0;
-        }
+    Minecraft mc = Minecraft.getInstance();
+    if (mc.getSingleplayerServer() == null) {
+        lastTps = 20.0;
+        return;
     }
+    try {
+        // 获取平均每 tick 耗时（纳秒），换算成 TPS
+        double avgTickTimeNs = mc.getSingleplayerServer().getTickTimeAverage();
+        if (avgTickTimeNs > 0) {
+            lastTps = Math.min(20.0, 1_000_000_000.0 / avgTickTimeNs);
+        } else {
+            lastTps = 20.0;
+        }
+    } catch (Exception e) {
+        lastTps = 20.0;
+    }
+}
 
     private static boolean isTpsThrottling() {
         LazyChunksConfig config = LazyChunksConfig.getInstance();

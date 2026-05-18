@@ -99,7 +99,7 @@ public class LazyChunksConfig {
         if (c.sampleInterval > 100) c.sampleInterval = 100;
         if (c.teleportCheckInterval < 1) c.teleportCheckInterval = 1;
         if (c.teleportCheckInterval > 100) c.teleportCheckInterval = 100;
-        if (c.teleportProtectionDuration < 20) c.portProtectionDuration = 20;
+        if (c.teleportProtectionDuration < 20) c.teleportProtectionDuration = 20;
         if (c.teleportProtectionDuration > 600) c.teleportProtectionDuration = 600;
         if (c.tpsThreshold < 5.0) c.tpsThreshold = 5.0;
         if (c.tpsThreshold > 20.0) c.tpsThreshold = 20.0;
