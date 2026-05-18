@@ -25,35 +25,32 @@ public class DebugScreenOverlayMixin {
 
     @Unique
     private static int lazychunks$cachedPending = 0;
-
     @Unique
     private static double lazychunks$cachedWeight = 0;
-
     @Unique
     private static double lazychunks$cachedBudget = 0;
-
     @Unique
     private static int lazychunks$cachedProcessed = 0;
-
     @Unique
     private static double lazychunks$cachedSmoothedFps = 0;
-
     @Unique
     private static double lazychunks$cachedVariance = 0;
-
     @Unique
     private static double lazychunks$cachedProcessingTime = 0;
-
     @Unique
     private static double lazychunks$cachedQueueGrowth = 0;
-
     @Unique
     private static boolean lazychunks$cachedTeleportRecovery = false;
 
     @Inject(method = "getSystemInformation", at = @At("RETURN"))
     private void lazychunks$addDebugInfo(CallbackInfoReturnable<List<String>> cir) {
-        List<String> info = cir.getReturnValue();
         LazyChunksConfig config = LazyChunksConfig.getInstance();
+
+        if (!config.showF3Overlay) {
+            return;
+        }
+
+        List<String> info = cir.getReturnValue();
 
         long now = System.currentTimeMillis();
         if (now - lazychunks$lastUpdateTime > lazychunks$UPDATE_INTERVAL_MS) {
@@ -71,7 +68,7 @@ public class DebugScreenOverlayMixin {
 
         int insertIndex = 0;
         info.add(insertIndex++, ChatFormatting.YELLOW.toString() + ChatFormatting.BOLD
-                + "LazyChunks " + LazyChunksMod.VERSION);
+                + "Neo Lazy Chunks " + LazyChunksMod.VERSION);
 
         if (config.lazyChunkLoadingEnabled) {
             info.add(insertIndex++, String.format("Pending: %d | Weight: %.1f | Budget: %.1f",
@@ -83,6 +80,8 @@ public class DebugScreenOverlayMixin {
                     lazychunks$cachedSmoothedFps,
                     lazychunks$cachedProcessingTime,
                     lazychunks$cachedVariance));
+
+            info.add(insertIndex++, String.format("TPS: %.1f", LazyChunkLoading.getLastTps()));
 
             StringBuilder status = new StringBuilder();
             if (LazyChunkLoading.wasThrottled()) {

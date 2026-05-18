@@ -2,6 +2,7 @@ package net.rizen.lazy_chunks;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.Vec3;
+import net.rizen.lazy_chunks.config.LazyChunksConfig;
 
 public class TeleportDetector {
 
@@ -10,7 +11,10 @@ public class TeleportDetector {
     private static int teleportCooldown = 0;
 
     private static final double TELEPORT_DISTANCE_THRESHOLD = 64.0;
-    private static final int TELEPORT_COOLDOWN_FRAMES = 120;
+
+    private static int getCooldownFrames() {
+        return LazyChunksConfig.getInstance().teleportProtectionDuration;
+    }
 
     public static void tick() {
         Minecraft mc = Minecraft.getInstance();
@@ -25,17 +29,16 @@ public class TeleportDetector {
 
         if (lastPosition != null && lastDimension != null) {
             if (!currentDim.equals(lastDimension)) {
-                teleportCooldown = TELEPORT_COOLDOWN_FRAMES;
+                teleportCooldown = getCooldownFrames();
             } else {
-                // 先用曼哈顿距离快速判断（无平方根，更快）
                 double manhattanDist = Math.abs(currentPos.x - lastPosition.x)
                                      + Math.abs(currentPos.y - lastPosition.y)
                                      + Math.abs(currentPos.z - lastPosition.z);
                 if (manhattanDist > TELEPORT_DISTANCE_THRESHOLD * 1.5) {
-                    teleportCooldown = TELEPORT_COOLDOWN_FRAMES;
+                    teleportCooldown = getCooldownFrames();
                 } else if (manhattanDist > TELEPORT_DISTANCE_THRESHOLD * 0.5) {
                     if (lastPosition.distanceTo(currentPos) > TELEPORT_DISTANCE_THRESHOLD) {
-                        teleportCooldown = TELEPORT_COOLDOWN_FRAMES;
+                        teleportCooldown = getCooldownFrames();
                     }
                 }
             }
@@ -59,7 +62,7 @@ public class TeleportDetector {
 
     public static double getBudgetMultiplier() {
         if (teleportCooldown <= 0) return 1.0;
-        double progress = 1.0 - ((double) teleportCooldown / TELEPORT_COOLDOWN_FRAMES);
+        double progress = 1.0 - ((double) teleportCooldown / getCooldownFrames());
         return 0.3 + (0.7 * progress);
     }
 

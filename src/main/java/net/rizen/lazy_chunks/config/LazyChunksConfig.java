@@ -12,6 +12,7 @@ public class LazyChunksConfig {
     private static final Path CONFIG_PATH =
             FMLPaths.CONFIGDIR.get().resolve("neo_lazy_chunks.toml");
 
+    public boolean showF3Overlay = true;
     public boolean lazyChunkLoadingEnabled = true;
     public int targetFps = 60;
     public int fpsThreshold = 80;
@@ -19,12 +20,15 @@ public class LazyChunksConfig {
     public double maxFrameTimePercent = 12.0;
     public boolean proactiveThrottling = true;
     public boolean teleportProtection = true;
+    public int teleportProtectionDuration = 120;
     public double weightChunkWithLight = 1.0;
     public double weightLightUpdate = 0.2;
     public double weightForgetChunk = 2.6;
-    public double minimumBudget = 3.0;
     public int sampleInterval = 5;
     public int teleportCheckInterval = 3;
+    public boolean tpsThrottleEnabled = false;
+    public double tpsThreshold = 15.0;
+    public int tpsCheckInterval = 20;
 
     public static LazyChunksConfig getInstance() {
         if (INSTANCE == null) {
@@ -43,6 +47,8 @@ public class LazyChunksConfig {
                     .preserveInsertionOrder()
                     .build()) {
                 cfg.load();
+                config.showF3Overlay =
+                        cfg.getOrElse("showF3Overlay", true);
                 config.lazyChunkLoadingEnabled =
                         cfg.getOrElse("lazyChunkLoadingEnabled", true);
                 config.targetFps =
@@ -57,18 +63,24 @@ public class LazyChunksConfig {
                         cfg.getOrElse("proactiveThrottling", true);
                 config.teleportProtection =
                         cfg.getOrElse("teleportProtection", true);
+                config.teleportProtectionDuration =
+                        cfg.getIntOrElse("teleportProtectionDuration", 120);
                 config.weightChunkWithLight =
                         cfg.<Double>getOrElse("weightChunkWithLight", 1.0);
                 config.weightLightUpdate =
                         cfg.<Double>getOrElse("weightLightUpdate", 0.2);
                 config.weightForgetChunk =
                         cfg.<Double>getOrElse("weightForgetChunk", 2.6);
-                config.minimumBudget =
-                        cfg.<Double>getOrElse("minimumBudget", 3.0);
                 config.sampleInterval =
                         cfg.getIntOrElse("sampleInterval", 5);
                 config.teleportCheckInterval =
                         cfg.getIntOrElse("teleportCheckInterval", 3);
+                config.tpsThrottleEnabled =
+                        cfg.getOrElse("tpsThrottleEnabled", false);
+                config.tpsThreshold =
+                        cfg.<Double>getOrElse("tpsThreshold", 15.0);
+                config.tpsCheckInterval =
+                        cfg.getIntOrElse("tpsCheckInterval", 20);
                 LazyChunksMod.LOGGER.info("Loaded config from {}", CONFIG_PATH);
             } catch (Exception e) {
                 LazyChunksMod.LOGGER.error(
@@ -87,9 +99,12 @@ public class LazyChunksConfig {
         if (c.sampleInterval > 100) c.sampleInterval = 100;
         if (c.teleportCheckInterval < 1) c.teleportCheckInterval = 1;
         if (c.teleportCheckInterval > 100) c.teleportCheckInterval = 100;
-        double maxWeight = Math.max(c.weightChunkWithLight,
-                           Math.max(c.weightLightUpdate, c.weightForgetChunk));
-        if (c.minimumBudget < maxWeight) c.minimumBudget = maxWeight;
+        if (c.teleportProtectionDuration < 20) c.portProtectionDuration = 20;
+        if (c.teleportProtectionDuration > 600) c.teleportProtectionDuration = 600;
+        if (c.tpsThreshold < 5.0) c.tpsThreshold = 5.0;
+        if (c.tpsThreshold > 20.0) c.tpsThreshold = 20.0;
+        if (c.tpsCheckInterval < 1) c.tpsCheckInterval = 1;
+        if (c.tpsCheckInterval > 200) c.tpsCheckInterval = 200;
     }
 
     public void save() {
@@ -104,116 +119,96 @@ public class LazyChunksConfig {
                 .build()) {
 
             cfg.setComment("",
-                    "\n LazyChunks — Client-side chunk-loading throttle" +
+                    "\n Neo Lazy Chunks — Client-side chunk-loading throttle" +
                     "\n Config file: .minecraft/config/neo_lazy_chunks.toml" +
                     "\n Changes take effect on the next game launch.\n");
 
+            cfg.setComment("showF3Overlay",
+                    " Show mod status in the F3 debug screen.");
+            cfg.set("showF3Overlay", showF3Overlay);
+
             cfg.setComment("lazyChunkLoadingEnabled",
-                    " Master switch. Set to false to disable the mod " +
-                    "entirely (vanilla behaviour).");
+                    " Master switch. Set to false to disable entirely.");
             cfg.set("lazyChunkLoadingEnabled", lazyChunkLoadingEnabled);
 
             cfg.setComment("targetFps",
                     "\n\n ---------- FPS-driven budget ----------");
             cfg.setComment("targetFps", cfg.getComment("targetFps") +
-                    "\n Baseline framerate used by the budget formula." +
-                    "\n The budget scales linearly with current FPS " +
-                    "relative to this value:" +
-                    "\n   budget = baseWeightPerFrame * (smoothedFps " +
-                    "/ targetFps)");
+                    "\n Baseline framerate (render frames per second)." +
+                    "\n   budget = baseWeightPerFrame * (smoothedFps / targetFps)");
             cfg.set("targetFps", targetFps);
 
             cfg.setComment("fpsThreshold",
-                    " FPS threshold above which throttling is fully " +
-                    "disabled.\n When smoothed FPS >= this value, all " +
-                    "pending chunk packets are processed\n immediately " +
-                    "(same as vanilla).");
+                    " FPS above which throttling is fully disabled.");
             cfg.set("fpsThreshold", fpsThreshold);
 
             cfg.setComment("baseWeightPerFrame",
-                    " Base amount of \"work\" allowed per frame at " +
-                    "targetFps.\n Each packet type consumes a configurable " +
-                    "amount of this budget.\n Higher = faster terrain " +
-                    "loading but more frame-time pressure.\n Lower  = " +
-                    "smoother frames but slower chunk population.");
+                    " Base work per frame at targetFps.\n Higher = faster loading, Lower = smoother.");
             cfg.set("baseWeightPerFrame", baseWeightPerFrame);
 
             cfg.setComment("maxFrameTimePercent",
-                    " Maximum percentage of a single frame-time that may " +
-                    "be spent on chunk\n processing, regardless of the " +
-                    "weight budget. Range 1–20.\n At 60 FPS (~16.7 ms per " +
-                    "frame), 12 % ≈ 2 ms ceiling.");
+                    " Max % of a single render frame for chunk processing (1–20).");
             cfg.set("maxFrameTimePercent", maxFrameTimePercent);
 
             cfg.setComment("proactiveThrottling",
                     "\n\n ---------- Adaptive throttling ----------");
-            cfg.setComment("proactiveThrottling", cfg.getComment(
-                    "proactiveThrottling") +
-                    "\n Analyses frame-time variance (jitter) and queue " +
-                    "pressure in addition\n to the raw FPS number. Unstable " +
-                    "frame-times reduce the budget proactively,\n before a " +
-                    "visible FPS drop occurs.");
+            cfg.setComment("proactiveThrottling", cfg.getComment("proactiveThrottling") +
+                    "\n Reduce budget preemptively when frame times are unstable.");
             cfg.set("proactiveThrottling", proactiveThrottling);
 
             cfg.setComment("teleportProtection",
-                    " Clamps the budget to a conservative fraction for 120 " +
-                    "frames (≈ 2 s) after\n a teleport or dimension change. " +
-                    "Prevents the burst of chunk packets that\n follows a " +
-                    "dimension switch from causing a severe hitch.");
+                    " Extra conservative budget after teleport / dimension change.");
             cfg.set("teleportProtection", teleportProtection);
 
+            cfg.setComment("teleportProtectionDuration",
+                    " Duration in render frames (not game ticks).\n" +
+                    " At 60 FPS: 120 frames ≈ 2s. Range 20–600.");
+            cfg.set("teleportProtectionDuration", teleportProtectionDuration);
+
             cfg.setComment("weightChunkWithLight",
-                    "\n\n ---------- Packet weights — how much budget " +
-                    "each packet type consumes ----------");
-            cfg.setComment("weightChunkWithLight", cfg.getComment(
-                    "weightChunkWithLight") +
-                    "\n Full chunk section with accompanying light data.");
+                    "\n\n ---------- Packet weights ----------");
+            cfg.setComment("weightChunkWithLight", cfg.getComment("weightChunkWithLight") +
+                    "\n Full chunk section with light data.");
             cfg.set("weightChunkWithLight", weightChunkWithLight);
 
             cfg.setComment("weightLightUpdate",
-                    " Standalone light update (no chunk geometry; sent " +
-                    "when lighting changes\n in an already-loaded chunk).");
+                    " Standalone light update.");
             cfg.set("weightLightUpdate", weightLightUpdate);
 
             cfg.setComment("weightForgetChunk",
-                    " Chunk unload (ClientboundForgetLevelChunkPacket).\n" +
-                    " Deliberately set higher than the load weight so " +
-                    "that, when a movement\n tick queues both unloads and " +
-                    "loads, the unloads consume the budget first.\n This " +
-                    "forces \"delete geometry\" and \"create geometry\" " +
-                    "phases into separate frames,\n avoiding the single-" +
-                    "frame spike where both happen at once.");
+                    " Chunk unload. Higher than load weights to" +
+                    "\n force unload and load into separate frames.");
             cfg.set("weightForgetChunk", weightForgetChunk);
 
-            cfg.setComment("minimumBudget",
-                    "\n\n ---------- Safety floor ----------");
-            cfg.setComment("minimumBudget", cfg.getComment("minimumBudget") +
-                    "\n Absolute minimum budget, applied after all " +
-                    "multipliers.\n Must be >= the heaviest single-packet " +
-                    "weight; otherwise the mod could\n deadlock when a " +
-                    "packet heavier than the floor arrives.\n The mod will " +
-                    "auto-clamp this value on load if it is too low.");
-            cfg.set("minimumBudget", minimumBudget);
-
             cfg.setComment("sampleInterval",
-                    "\n\n ---------- Internal sampling rates " +
-                    "(CPU trade-off) ----------");
+                    "\n\n ---------- Sampling rates (render frames) ----------");
             cfg.setComment("sampleInterval", cfg.getComment("sampleInterval") +
-                    "\n How many frames between full budget recalculations." +
-                    "\n   1  — every frame (most responsive, highest " +
-                    "overhead)" +
-                    "\n   5  — default balance (~12 Hz at 60 FPS)" +
-                    "\n   20 — least overhead, budget reacts ~330 ms late");
+                    "\n Frames between budget recalculations.\n" +
+                    " At 60 FPS: 1 = 60 Hz, 5 = 12 Hz (default), 20 = 3 Hz");
             cfg.set("sampleInterval", sampleInterval);
 
             cfg.setComment("teleportCheckInterval",
-                    " How many frames between teleport / dimension-change " +
-                    "checks.\n Uses a cheap Manhattan-distance pre-filter; " +
-                    "only falls back to the\n expensive Euclidean distance " +
-                    "when the fast check passes.\n   1  — every frame\n   " +
-                    "3  — default (~20 Hz at 60 FPS)\n   10 — minimal " +
-                    "overhead");
+                    " Frames between teleport checks.\n" +
+                    " At 60 FPS: 1 = 60 Hz, 3 = 20 Hz (default), 10 = 6 Hz");
             cfg.set("teleportCheckInterval", teleportCheckInterval);
+
+            cfg.setComment("tpsThrottleEnabled",
+                    "\n\n ---------- TPS throttle (single-player only) ----------");
+            cfg.setComment("tpsThrottleEnabled", cfg.getComment("tpsThrottleEnabled") +
+                    "\n When server TPS drops below threshold, budget is" +
+                    "\n clamped to minimum." +
+                    "\n Only affects single-player (integrated server).");
+            cfg.set("tpsThrottleEnabled", tpsThrottleEnabled);
+
+            cfg.setComment("tpsThreshold",
+                    " TPS threshold. Range 5.0–20.0. Default 15.0.");
+            cfg.set("tpsThreshold", tpsThreshold);
+
+            cfg.setComment("tpsCheckInterval",
+                    " Frames between TPS checks (render frames, not game ticks).\n" +
+                    " At 60 FPS: 20 frames ≈ 3 checks per second.\n" +
+                    " Range 1–200. Default 20.");
+            cfg.set("tpsCheckInterval", tpsCheckInterval);
 
             LazyChunksMod.LOGGER.info("Saved config to {}", CONFIG_PATH);
         } catch (Exception e) {

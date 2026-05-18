@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(BlockableEventLoop.class)
 public abstract class BlockableEventLoopMixin {
@@ -25,7 +25,7 @@ public abstract class BlockableEventLoopMixin {
     private static final int lazychunks$FRAME_COUNTER_MAX = 10000;
 
     @Inject(method = "runAllTasks", at = @At("HEAD"), cancellable = true)
-    private void lazychunks$throttleChunkLoading(CallbackInfo ci) {
+    private void lazychunks$throttleChunkLoading(CallbackInfoReturnable<Boolean> cir) {
         BlockableEventLoop<?> self = (BlockableEventLoop<?>) (Object) this;
         if (self != Minecraft.getInstance()) {
             return;
@@ -55,8 +55,10 @@ public abstract class BlockableEventLoopMixin {
 
         long maxTimeNanos = LazyChunkLoading.getMaxProcessingTimeNanos();
         long startTime = System.nanoTime();
+        boolean didWork = false;
 
         while (self.pollTask()) {
+            didWork = true;
             --taskLimit;
             if (taskLimit <= 0) break;
             if (System.nanoTime() - startTime > maxTimeNanos) break;
@@ -65,6 +67,7 @@ public abstract class BlockableEventLoopMixin {
         double processingTimeMs = (System.nanoTime() - startTime) / 1_000_000.0;
         LazyChunkLoading.recordProcessingTime(processingTimeMs);
 
-        ci.cancel();
+        cir.setReturnValue(didWork);
+        cir.cancel();
     }
 }
