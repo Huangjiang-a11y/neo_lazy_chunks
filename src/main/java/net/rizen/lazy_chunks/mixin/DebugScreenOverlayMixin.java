@@ -3,10 +3,32 @@ package net.rizen.lazy_chunks.mixin;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.rizen.lazy_chunks.LazyChunksMod;
-import net.ri.T;
-owered.ListUpdate privateunks$ 0;
+import net.rizen.lazy_chunks.LazyChunkLoading;
+import net.rizen.lazy_chunks.TeleportDetector;
+import net.rizen.lazy_chunks.config.LazyChunksConfig;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+
+import java.util.List;
+
+@Mixin(DebugScreenOverlay.class)
+public class DebugScreenOverlayMixin {
+
     @Unique
-    private static doublezychunks$cachedBudget = 0;
+    private static long lazychunks$lastUpdateTime = 0;
+
+    @Unique
+    private static final long lazychunks$UPDATE_INTERVAL_MS = 100;
+
+    @Unique
+    private static int lazychunks$cachedPending = 0;
+    @Unique
+    private static double lazychunks$cachedWeight = 0;
+    @Unique
+    private static double lazychunks$cachedBudget = 0;
     @Unique
     private static int lazychunks$cachedProcessed = 0;
     @Unique
@@ -54,8 +76,10 @@ owered.ListUpdate privateunks$ 0;
                     lazychunks$cachedWeight,
                     lazychunks$cachedBudget));
 
-            info.add(insertIndex++, String.format("Smoothed FPS: %.                   ,
-                    lazychachedVariance));
+            info.add(insertIndex++, String.format("Smoothed FPS: %.0f | Process: %.2fms | Var: %.1f",
+                    lazychunks$cachedSmoothedFps,
+                    lazychunks$cachedProcessingTime,
+                    lazychunks$cachedVariance));
 
             StringBuilder status = new StringBuilder();
             if (LazyChunkLoading.wasThrottled()) {

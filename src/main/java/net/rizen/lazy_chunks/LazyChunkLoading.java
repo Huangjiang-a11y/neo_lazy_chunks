@@ -71,8 +71,8 @@ public class LazyChunkLoading {
         }
         double prevAvg = emaFrameTime;
         emaFrameTime += EMA_ALPHA * (frameTimeMs - emaFrameTime);
-        double diff = frameTimeMs -Avg;
-Variance += EMA_ALPHA * (diff * diff - emaFrameVariance);
+        double diff = frameTimeMs - prevAvg;
+        emaFrameVariance += EMA_ALPHA * (diff * diff - emaFrameVariance);
     }
 
     public static void recordProcessingTime(double timeMs) {
@@ -180,7 +180,13 @@ Variance += EMA_ALPHA * (diff * diff - emaFrameVariance);
             return Integer.MAX_VALUE;
         }
 
-        int sampleInterval = Math.max(1Sample lastThrottled = false;
+        int sampleInterval = Math.max(1, config.sampleInterval);
+        boolean shouldSample = (frameCounter % sampleInterval == 0);
+
+        if (shouldSample) {
+            doFullSample(taskCount);
+            if (cachedMaxWeight == Double.MAX_VALUE) {
+                lastThrottled = false;
                 lastBudget = totalWeight;
                 lastProcessed = taskCount;
                 return Integer.MAX_VALUE;
